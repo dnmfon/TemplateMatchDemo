@@ -1,0 +1,19 @@
+# 编译产物
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# 运行时生成（标定值跟随本机，不入库）
+calibration.txt
+
+# 临时文件
+*.tmp
+*.bak
+*.bak2
+Thumbs.db
