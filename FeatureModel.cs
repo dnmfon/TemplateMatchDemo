@@ -1387,18 +1387,28 @@ namespace TemplateMatchDemo
                 lst.Add(pr);
             }
             List<Pair> bestBin = null;
+            Point bestKey = Point.Empty;
             foreach (KeyValuePair<Point, List<Pair>> kv in bins)
             {
                 bool take = bestBin == null || kv.Value.Count > bestBin.Count;
                 if (!take && kv.Value.Count == bestBin.Count)
                 {
                     int d1 = Math.Abs(kv.Key.X) + Math.Abs(kv.Key.Y);
-                    int d2 = Math.Abs(bestBin[0].ShiftX) + Math.Abs(bestBin[0].ShiftY);
+                    int d2 = Math.Abs(bestKey.X) + Math.Abs(bestKey.Y);
                     take = d1 < d2;
                 }
-                if (take) bestBin = kv.Value;
+                if (take) { bestBin = kv.Value; bestKey = kv.Key; }
             }
             if (bestBin == null) return r;
+
+            // 把最佳位移箱「邻域」（±1 格 ≈ ±4px）的配对也纳入候选。
+            // 工件旋转或轻微缩放时，各特征的位移会差几个像素，严格只取单箱
+            // 会把大部分绿线甩掉，只剩 1 条 → 角度只能退化为 PCA 主轴，
+            // 而方形轮廓的主轴有 90° 歧义，读数会乱跳（例如旋转-2° 报成 -23°）。
+            List<Pair> pool = new List<Pair>();
+            foreach (KeyValuePair<Point, List<Pair>> kv in bins)
+                if (Math.Abs(kv.Key.X - bestKey.X) <= 1 && Math.Abs(kv.Key.Y - bestKey.Y) <= 1)
+                    pool.AddRange(kv.Value);
 
             // 3) 每条绿线只保留一个最佳配对
             Dictionary<int, Pair> perGreen = new Dictionary<int, Pair>();
@@ -1406,7 +1416,7 @@ namespace TemplateMatchDemo
             {
                 PointF ga = Center(green[gi]);
                 Pair best = null;
-                foreach (Pair pr in bestBin)
+                foreach (Pair pr in pool)
                 {
                     if (Math.Abs(pr.A.X - ga.X) > 0.5f
                         || Math.Abs(pr.A.Y - ga.Y) > 0.5f) continue;
